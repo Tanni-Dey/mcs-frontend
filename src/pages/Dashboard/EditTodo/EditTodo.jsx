@@ -1,10 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import {
+  useEditTaskMutation,
+  useGetSingleTaskQuery,
+} from "../../../redux/ApiSlice";
 
 const EditTodo = () => {
   const { id } = useParams();
-  const [singleTodo, setSignleTodo] = useState({});
   const [toast, setToast] = useState(false);
+  const [editTask] = useEditTaskMutation();
+  const { data: singleTodo } = useGetSingleTaskQuery(id, {
+    refetchOnFocus: true,
+    pollingInterval: 3000,
+  });
 
   const notification = (
     <div className="toast toast-top toast-end">
@@ -16,13 +24,7 @@ const EditTodo = () => {
     </div>
   );
 
-  useEffect(() => {
-    fetch(`https://mcs-backend-96pw.onrender.com/api/task/${id}`)
-      .then((res) => res.json())
-      .then((data) => setSignleTodo(data));
-  }, [singleTodo]);
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const title = e.target.title.value;
@@ -34,23 +36,14 @@ const EditTodo = () => {
       status: status,
     };
 
-    fetch(`https://mcs-backend-96pw.onrender.com/api/update-task/${id}`, {
-      method: "PUT",
-      headers: {
-        "content-type": "application/json",
-      },
-      body: JSON.stringify(updatedTodo),
-    })
-      .then((res) => {
-        if (res.status === 200) {
-          res.json();
-          setToast(true);
-          setTimeout(() => {
-            setToast(false);
-          }, 3000);
-        }
-      })
-      .then((data) => console.log(data));
+    const editData = await editTask({ data: updatedTodo, id: id });
+
+    if (editData.data.acknowledged) {
+      setToast(true);
+      setTimeout(() => {
+        setToast(false);
+      }, 3000);
+    }
   };
 
   return (
@@ -65,14 +58,14 @@ const EditTodo = () => {
               type="text"
               name="title"
               placeholder="Enter Task Tittle"
-              defaultValue={singleTodo.title}
+              defaultValue={singleTodo?.title}
               className="input input-bordered input-md w-full max-w-xs mb-3"
             />
             <textarea
               type="text"
               name="des"
               placeholder="Enter Task Description"
-              defaultValue={singleTodo.des}
+              defaultValue={singleTodo?.des}
               className="textarea textarea-bordered textarea-md w-full max-w-xs mb-3"
             />
 
@@ -82,20 +75,20 @@ const EditTodo = () => {
               className="select select-bordered select-md w-full max-w-xs mb-3"
             >
               <option
-                selected={singleTodo.status === "pending"}
+                selected={singleTodo?.status === "pending"}
                 value="pending"
               >
                 Pending
               </option>
 
               <option
-                selected={singleTodo.status === "in progress"}
+                selected={singleTodo?.status === "in progress"}
                 value="in progress"
               >
                 in progress
               </option>
               <option
-                selected={singleTodo.status === "completed"}
+                selected={singleTodo?.status === "completed"}
                 value="completed"
               >
                 Completed

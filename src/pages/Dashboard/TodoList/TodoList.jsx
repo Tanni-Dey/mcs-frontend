@@ -1,14 +1,23 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { RiDeleteBinLine } from "react-icons/ri";
 import { BsCheckLg } from "react-icons/bs";
 import { CiEdit } from "react-icons/ci";
 import { Link } from "react-router-dom";
-import axios from "axios";
+import {
+  useDeleteTaskMutation,
+  useGetAllTaskQuery,
+  useMarkCompleteMutation,
+} from "../../../redux/ApiSlice";
 
 const TodoList = () => {
-  const [todos, setTodos] = useState([]);
   const [singleTask, setSingleTask] = useState({});
   const [toast, setToast] = useState(false);
+  const { data: todos } = useGetAllTaskQuery(undefined, {
+    refetchOnFocus: true,
+    pollingInterval: 3000,
+  });
+  const [deleteTask] = useDeleteTaskMutation();
+  const [markComplete] = useMarkCompleteMutation();
 
   const notification = (
     <div className="toast toast-top toast-end">
@@ -20,49 +29,19 @@ const TodoList = () => {
     </div>
   );
 
-  useEffect(() => {
-    const allTodo = async () => {
-      try {
-        const { data } = await axios.get(
-          "https://mcs-backend-96pw.onrender.com/api/tasks"
-          // {
-          //   headers: {
-          //     authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          //   },
-          // }
-        );
-        setTodos(data);
-      } catch (error) {
-        setTodos([]);
-      }
-    };
-    allTodo();
-  }, [singleTask, todos]);
+  const handleDelete = async (id) => {
+    const deleteData = await deleteTask(id);
 
-  const handleDelete = (id) => {
-    fetch(`https://mcs-backend-96pw.onrender.com/api/delete-task/${id}`, {
-      method: "DELETE",
-    })
-      .then((res) => {
-        if (res.status === 200) {
-          res.json();
-          setToast(true);
-          setTimeout(() => {
-            setToast(false);
-          }, 3000);
-        }
-      })
-      .then((data) => console.log(data));
+    if (deleteData.data.acknowledged) {
+      setToast(true);
+      setTimeout(() => {
+        setToast(false);
+      }, 3000);
+    }
   };
 
-  const handleMarkCompleted = (id) => {
-    fetch(`https://mcs-backend-96pw.onrender.com/api/mark-complete/${id}`, {
-      method: "PUT",
-      headers: {
-        "content-type": "application/json",
-      },
-      body: JSON.stringify(),
-    });
+  const handleMarkCompleted = async (id) => {
+    await markComplete(id);
   };
 
   return (
@@ -72,7 +51,7 @@ const TodoList = () => {
       </div>
 
       <div className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-5">
-        {todos.map((todo) => (
+        {todos?.map((todo) => (
           <div key={todo._id} className="">
             <div className="card glass bg-slate-200 hover:bg-slate-300">
               <div className="card-body text-left p-0">

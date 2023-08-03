@@ -1,7 +1,9 @@
 import React, { useState } from "react";
+import { useAddTaskMutation } from "../../../redux/ApiSlice";
 
 const TodoAdd = () => {
   const [toast, setToast] = useState(false);
+  const [addTask] = useAddTaskMutation();
 
   const notification = (
     <div className="toast toast-top toast-end">
@@ -13,7 +15,7 @@ const TodoAdd = () => {
     </div>
   );
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const title = e.target.title.value;
@@ -25,23 +27,14 @@ const TodoAdd = () => {
       status: status,
     };
 
-    fetch("https://mcs-backend-96pw.onrender.com/api/add-task", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-      },
-      body: JSON.stringify(addTodo),
-    })
-      .then((res) => {
-        if (res.status === 200) {
-          res.json();
-          setToast(true);
-          setTimeout(() => {
-            setToast(false);
-          }, 3000);
-        }
-      })
-      .then((data) => console.log(data));
+    const postData = await addTask(addTodo);
+
+    if (postData.data) {
+      setToast(true);
+      setTimeout(() => {
+        setToast(false);
+      }, 3000);
+    }
 
     e.target.reset();
   };
